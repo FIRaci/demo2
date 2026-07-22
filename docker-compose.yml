@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  pulse-hrm-oracle:
+    image: gvenzl/oracle-free:latest
+    container_name: pulse-hrm-oracle
+    ports:
+      - "1522:1521"
+    environment:
+      - ORACLE_PASSWORD=oracle123
+      - APP_USER=hrm_user
+      - APP_USER_PASSWORD=hrm123
+    volumes:
+      - pulse-hrm-data:/gvenzl/oracle-free
+    restart: always
+
+volumes:
+  pulse-hrm-data:

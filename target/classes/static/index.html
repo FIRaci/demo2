@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulseHRM - Human Resource Management System</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        <!-- Navigation Header -->
+        <header class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-users-gear logo-icon"></i>
+                <span class="logo-text">Pulse<span>HRM</span></span>
+            </div>
+            
+            <div id="userSection" class="user-section hidden">
+                <div class="user-badge">
+                    <i class="fa-solid fa-circle-user avatar-icon"></i>
+                    <div class="user-info">
+                        <span id="navUserName" class="user-name">Loading...</span>
+                        <span id="navUserRole" class="user-role badge-admin">ADMIN</span>
+                    </div>
+                </div>
+                <button id="btnLogout" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="toast hidden">
+            <i id="toastIcon" class="fa-solid fa-circle-info"></i>
+            <span id="toastMessage">Notification message</span>
+        </div>
+
+        <!-- AUTH VIEW (Login / Register) -->
+        <main id="authView" class="main-content flex-center">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h2>Welcome to PulseHRM</h2>
+                    <p>Enter your Employee ID and password to access the portal</p>
+                </div>
+
+                <div class="tab-buttons">
+                    <button id="tabLogin" class="tab-btn active" onclick="switchAuthTab('login')">
+                        <i class="fa-solid fa-right-to-bracket"></i> Login
+                    </button>
+                    <button id="tabRegister" class="tab-btn" onclick="switchAuthTab('register')">
+                        <i class="fa-solid fa-user-plus"></i> Register
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="formLogin" class="auth-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="loginEmpId"><i class="fa-solid fa-id-card"></i> Employee ID</label>
+                        <input type="text" id="loginEmpId" class="form-control" placeholder="e.g. ADMIN001 or EMP001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword"><i class="fa-solid fa-lock"></i> Password</label>
+                        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">
+                        <i class="fa-solid fa-right-to-bracket"></i> Login to Portal
+                    </button>
+
+                    <div class="demo-credentials">
+                        <span><i class="fa-solid fa-bolt"></i> Quick Login:</span>
+                        <button type="button" class="btn-chip" onclick="fillLogin('ADMIN001', 'admin123')">Admin (ADMIN001)</button>
+                        <button type="button" class="btn-chip" onclick="fillLogin('EMP001', 'user123')">Employee (EMP001)</button>
+                    </div>
+                </form>
+
+                <!-- Register Form -->
+                <form id="formRegister" class="auth-form hidden" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="regEmpId"><i class="fa-solid fa-id-card"></i> Employee ID</label>
+                        <input type="text" id="regEmpId" class="form-control" placeholder="e.g. EMP002 or NEW001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword"><i class="fa-solid fa-key"></i> Desired Password</label>
+                        <input type="password" id="regPassword" class="form-control" placeholder="At least 6 characters" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block btn-lg">
+                        <i class="fa-solid fa-user-check"></i> Register Account
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- DASHBOARD VIEW -->
+        <main id="dashboardView" class="main-content hidden">
+            <!-- ADMIN MANAGEMENT PANEL -->
+            <div id="adminPanel" class="panel-section hidden">
+                <div class="panel-header">
+                    <div>
+                        <h1><i class="fa-solid fa-users"></i> Employee Management</h1>
+                        <p class="text-muted">Manage workforce, salaries, and personnel records</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openAddModal()">
+                        <i class="fa-solid fa-user-plus"></i> Add Employee
+                    </button>
+                </div>
+
+                <!-- Search & Filter Controls -->
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search employee by name..." oninput="triggerFilter()">
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fa-solid fa-filter"></i> Employee Type:</label>
+                        <select id="filterType" class="form-select" onchange="triggerFilter()">
+                            <option value="">All Types</option>
+                            <option value="FULL_TIME">Full-time</option>
+                            <option value="PART_TIME">Part-time</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Employees Table -->
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Full Name</th>
+                                <th>Age / DOB</th>
+                                <th>Gender</th>
+                                <th>Type</th>
+                                <th>Department & Position</th>
+                                <th>Salary ($)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- EMPLOYEE PERSONAL PROFILE PANEL -->
+            <div id="employeePanel" class="panel-section hidden">
+                <div class="profile-card-container">
+                    <div class="profile-header-banner">
+                        <div class="avatar-large">
+                            <i class="fa-solid fa-id-badge"></i>
+                        </div>
+                        <div class="profile-title">
+                            <h1 id="empProfName">Employee Name</h1>
+                            <span id="empProfPos" class="profile-subtitle">Position & Department</span>
+                        </div>
+                        <span id="empProfType" class="badge badge-primary">FULL_TIME</span>
+                    </div>
+
+                    <div class="profile-details-grid">
+                        <div class="detail-card">
+                            <div class="icon-box"><i class="fa-solid fa-hashtag"></i></div>
+                            <div>
+                                <label>Employee ID</label>
+                                <span id="empProfId" class="val-text">-</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-card">
+                            <div class="icon-box"><i class="fa-solid fa-cake-candles"></i></div>
+                            <div>
+                                <label>DOB & Age (Calculated)</label>
+                                <span id="empProfDob" class="val-text">-</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-card">
+                            <div class="icon-box"><i class="fa-solid fa-venus-mars"></i></div>
+                            <div>
+                                <label>Gender</label>
+                                <span id="empProfGender" class="val-text">-</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-card">
+                            <div class="icon-box"><i class="fa-solid fa-envelope"></i></div>
+                            <div>
+                                <label>Email Address</label>
+                                <span id="empProfEmail" class="val-text">-</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-card">
+                            <div class="icon-box"><i class="fa-solid fa-phone"></i></div>
+                            <div>
+                                <label>Phone Number</label>
+                                <span id="empProfPhone" class="val-text">-</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-card">
+                            <div class="icon-box"><i class="fa-solid fa-location-dot"></i></div>
+                            <div>
+                                <label>Address</label>
+                                <span id="empProfAddress" class="val-text">-</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-card highlight-card">
+                            <div class="icon-box"><i class="fa-solid fa-sack-dollar"></i></div>
+                            <div>
+                                <label>Monthly Salary (Confidential)</label>
+                                <span id="empProfSalary" class="val-text text-success">-</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-card">
+                            <div class="icon-box"><i class="fa-solid fa-building-columns"></i></div>
+                            <div>
+                                <label>Bank Account</label>
+                                <span id="empProfBank" class="val-text">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ADD / EDIT EMPLOYEE MODAL -->
+        <div id="employeeModal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3 id="modalTitle"><i class="fa-solid fa-user-pen"></i> Add New Employee</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="employeeForm" onsubmit="handleSaveEmployee(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="mEmpId">Employee ID *</label>
+                            <input type="text" id="mEmpId" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mFullName">Full Name *</label>
+                            <input type="text" id="mFullName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mDob">Date of Birth</label>
+                            <input type="date" id="mDob" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="mGender">Gender</label>
+                            <select id="mGender" class="form-select">
+                                <option value="MALE">MALE</option>
+                                <option value="FEMALE">FEMALE</option>
+                                <option value="OTHER">OTHER</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="mEmail">Email Address</label>
+                            <input type="email" id="mEmail" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="mPhone">Phone Number</label>
+                            <input type="text" id="mPhone" class="form-control">
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="mAddress">Address</label>
+                            <input type="text" id="mAddress" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="mEmpType">Employee Type *</label>
+                            <select id="mEmpType" class="form-select" required>
+                                <option value="FULL_TIME">FULL_TIME</option>
+                                <option value="PART_TIME">PART_TIME</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="mDepartment">Department</label>
+                            <input type="text" id="mDepartment" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="mPosition">Position</label>
+                            <input type="text" id="mPosition" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="mSalary">Salary ($)</label>
+                            <input type="number" step="0.01" id="mSalary" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="mBankName">Bank Name</label>
+                            <input type="text" id="mBankName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="mAccountNumber">Account Number</label>
+                            <input type="text" id="mAccountNumber" class="form-control">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Employee</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW DETAILS MODAL -->
+        <div id="detailsModal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-circle-info"></i> Employee Details</h3>
+                    <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
+                </div>
+                <div id="detailsContent" class="modal-body-details">
+                    <!-- Dynamic Details -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeDetailsModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

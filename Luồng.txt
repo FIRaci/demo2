@@ -1,0 +1,472 @@
+================================================================================
+  PULSE HRM - MASTER FLOW & SPRING BOOT INTERNAL ARCHITECTURE DOCUMENT
+================================================================================
+
+Tài liệu hướng dẫn chuyên sâu về Cơ chế hoạt động ngầm của Spring Boot, IoC Container, 
+Beans, Annotations, AOP Proxies, Jackson JSON, Java 8 Streams, DTO Mapping và 
+Chi tiết Luồng Chạy Dữ liệu (End-to-End Execution Flow) của Hệ thống Pulse HRM.
+
+================================================================================
+PHẦN 1: TỔNG QUAN VỀ CƠ CHẾ HOẠT ĐỘNG CỦA SPRING BOOT (CONTAINER, BEAN & ANNOTATION)
+================================================================================
+
+1. Spring IoC Container (ApplicationContext) là gì?
+   - Trong ứng dụng Java truyền thống, bạn phải tự gõ `new EmployeeServiceImpl()` để tạo đối tượng.
+   - Trong Spring Boot, bạn KHÔNG KHỞI TẠO ĐỐI TƯỢNG BẰNG TỪ KHÓA `new` thủ công.
+   - Ngược lại, **Spring IoC Container (Inversion of Control - Đảo ngược điều khiển)** là một "Nhà máy/Quản gia" toàn năng.
+   - Khi chạy lệnh `SpringApplication.run(HrmApplication.class, args)`:
+     + Spring sẽ thực hiện **Component Scan**: Quét toàn bộ gói `com.example.hrm` và các thư mục con.
+     + Tìm tất cả các Class được đánh dấu Annotation (`@Component`, `@Service`, `@Repository`, `@RestController`, `@Configuration`).
+     + Tự động khởi tạo các Class đó thành các đối tượng duy nhất (gọi là **Beans**) và quản lý tập trung trong bộ nhớ (ApplicationContext).
+
+2. Dependency Injection (Tiêm phụ thuộc qua Constructor):
+   - Khi `EmployeeController` cần sử dụng `EmployeeService`, thay vì khởi tạo `new EmployeeServiceImpl()`, ta khai báo:
+     ```java
+     private final EmployeeService employeeService;
+     public EmployeeController(EmployeeService employeeService) {
+         this.employeeService = employeeService;
+     }
+     ```
+   - Spring IoC Container sẽ tự động tìm thấy Bean `EmployeeServiceImpl` đã khởi tạo sẵn và "tiêm" (Inject) nó vào `EmployeeController`.
+   - Lợi ích: **Low Coupling (Độ phụ thuộc thấp)** & **High Cohesion (Tính đóng gói cao)** chuẩn SOLID.
+
+3. Giải thích Ý nghĩa & Cơ chế của từng Annotation trong dự án:
+
+   A. `@SpringBootApplication` (tại `HrmApplication.java`):
+      - Là tổ hợp của 3 Annotation: `@Configuration` + `@EnableAutoConfiguration` + `@ComponentScan`.
+      - Báo cho Spring Boot tự động bật máy chủ web ngầm Tomcat (Cổng 8080) và quét toàn bộ dự án.
+
+   B. `@RestController` (tại `AuthController.java`, `EmployeeController.java`):
+      - Là tổ hợp của `@Controller` + `@ResponseBody`.
+      - Biến Class thành một Cổng tiếp nhận Web API RESTful.
+      - Mọi dữ liệu trả về từ hàm (như `ResponseEntity<ApiResponse>`) sẽ được Spring tự động chuyển thành chuỗi chuẩn **JSON** cho Trình duyệt đọc.
+
+   C. `@Service` (tại `AuthServiceImpl.java`, `EmployeeServiceImpl.java`):
+      - Khai báo Class chứa Logic Nghiệp vụ. Spring sẽ đăng ký nó thành một Service Bean trong Container.
+
+   D. `@Repository` (tại `EmployeeRepository.java`, `UserAccountRepository.java`):
+      - Khai báo Class/Interface thao tác với Database.
+      - Khi kế thừa `JpaRepository`, Spring Data JPA dùng **Dynamic Proxy** để TỰ ĐỘNG TẠO CODE THỰC THI THỦ CÔNG các câu lệnh SQL (SELECT, INSERT, UPDATE, DELETE) ngay trong bộ nhớ mà bạn không cần gõ 1 dòng SQL nào!
+
+   E. `@Configuration` & `@Bean` (tại `SecurityConfig.java`):
+      - `@Configuration`: Chứa các thiết lập hệ thống.
+      - `@Bean`: Đánh dấu một hàm trả về một đối tượng cần Spring quản lý (VD: `passwordEncoder()`, `securityFilterChain()`).
+
+   F. `@Transactional` (tại các hàm của `EmployeeServiceImpl.java`):
+      - Spring dùng **AOP Dynamic Proxy** bọc quanh hàm này.
+      - Trước khi chạy hàm: Tự động mở một Transaction DB (`BEGIN TRANSACTION`).
+      - Nếu hàm chạy thành công: Tự động `COMMIT TRANSACTION`.
+      - Nếu có lỗi/Exception xảy ra: Tự động `ROLLBACK TRANSACTION` để dữ liệu DB không bị sai lệch.
+
+   G. `@PreAuthorize("hasAuthority('ROLE_ADMIN')")`:
+      - Spring Security dùng AOP bọc quanh hàm Controller. Trước khi code trong hàm chạy, Spring soi kiểm tra Token người dùng có quyền `ROLE_ADMIN` hay không. Nếu không ➔ Ném lỗi `403 Forbidden` ngay lập tức!
+
+
+================================================================================
+PHẦN 2: CHẶNG ĐƯỜNG 8 GIAI ĐOẠN CỦA MỘT HTTP REQUEST (REQUEST LIFECYCLE)
+================================================================================
+
+Khi người dùng ấn nút trên giao diện Web ➔ Dữ liệu trải qua 8 giai đoạn chính:
+
+[GIAI ĐOẠN 1: CLIENT FETCH API (JS)]
+- File: `app.js`
+- JS gọi hàm `fetch('/api/employees', { headers: { 'Authorization': 'Bearer ' + token } })`.
+- Đóng gói thông tin gửi qua đường truyền HTTP.
+
+[GIAI ĐOẠN 2: TOMCAT EMBEDDED SERVER & DISPATCHER SERVLET]
+- Spring Boot Embedded Tomcat Server tiếp nhận HTTP Request ở Cổng 8080.
+- Chuyển Request tới trung tâm tiếp nhận `DispatcherServlet` của Spring MVC.
+
+[GIAI ĐOẠN 3: SECURITY FILTER CHAIN (BẢO MẬT)]
+- Request đi qua `JwtAuthenticationFilter.java`.
+- `parseJwt()` lấy chuỗi Token ➔ `jwtUtils.validateJwtToken()` giải mã chữ ký HMAC SHA-256.
+- Đọc `employeeId` và `role` ➔ Đăng ký đối tượng xác thực vào `SecurityContextHolder`.
+
+[GIAI ĐOẠN 4: HANDLER MAPPING & CONTROLLER ROUTING]
+- `DispatcherServlet` tìm Controller khớp với URL (VD: `GET /api/employees` ➔ `EmployeeController.getAllEmployees()`).
+
+[GIAI ĐOẠN 5: JACKSON DESERIALIZATION & VALIDATION]
+- Nếu có dữ liệu JSON gửi lên (POST/PUT), thư viện **Jackson** tự động giải mã chuỗi JSON thành đối tượng Java (`EmployeeRequest`).
+- `@Valid` kiểm tra các luật dữ liệu (`@NotBlank`, `@Email`, `@Size`).
+
+[GIAI ĐOẠN 6: SERVICE BUSINESS LOGIC & JAVA 8 STREAMS]
+- Controller gọi `EmployeeServiceImpl.getAllEmployees()`.
+- Service xử lý logic kiểm tra quyền Admin / Nhân viên thường.
+- Dùng **Java 8 Stream API** (`employees.stream().map(...).collect(...)`) để biến đổi danh sách Entity thành DTO Response.
+
+[GIAI ĐOẠN 7: REPOSITORY & HIBERNATE JPA DATABASE QUERY]
+- Hibernate JPA dịch hàm repository thành câu SQL chuẩn (VD: `SELECT e FROM Employee e...`).
+- Thực thi câu lệnh SQL tới H2 Database và nhận kết quả.
+
+[GIAI ĐOẠN 8: DTO MASKING & JACKSON SERIALIZATION RESPONSE]
+- Hàm `EmployeeResponse.fromEntity(emp, includeSalary)` kiểm tra quyền: Nếu không đủ quyền xem lương ➔ Gán `salary = null`.
+- Jackson mã hóa đối tượng `ApiResponse` thành chuỗi JSON và gửi trả về Trình duyệt.
+
+
+================================================================================
+PHẦN 3: CHI TIẾT CÁC LUỒNG DỮ LIỆU END-TO-END THỰC TẾ
+================================================================================
+
+--------------------------------------------------------------------------------
+LUỒNG 1: ADMIN ĐĂNG NHẬP VÀO HỆ THỐNG
+--------------------------------------------------------------------------------
+Kịch bản: Admin nhập ID "ADMIN001" và mật khẩu "admin123" tại Form Login.
+
+1. FRONTEND:
+   - File: `src/main/resources/static/js/app.js`
+   - Method: `handleLogin(event)`
+   - Chức năng: Ngăn reload trang (`event.preventDefault()`), gom JSON `{ employeeId: "ADMIN001", password: "admin123" }` và gọi `POST /api/auth/login`.
+
+2. SPRING SECURITY:
+   - File: `src/main/java/com/example/hrm/config/SecurityConfig.java`
+   - Method: `filterChain(HttpSecurity http)`
+   - Chức năng: Khớp cấu hình `.requestMatchers("/api/auth/**").permitAll()` ➔ Cho phép đi qua không cần Token.
+
+3. CONTROLLER:
+   - File: `src/main/java/com/example/hrm/controller/AuthController.java`
+   - Method: `login(@Valid @RequestBody LoginRequest request)`
+   - Chức năng: Jackson chuyển JSON thành `LoginRequest`. Gọi `authService.login(request)`.
+
+4. SERVICE (LOGIC XÁC THỰC):
+   - File: `src/main/java/com/example/hrm/service/impl/AuthServiceImpl.java`
+   - Method: `login(LoginRequest loginRequest)`
+   - Chi tiết từng câu lệnh:
+     a) `userAccountRepository.findByEmployeeId("ADMIN001")`: Đọc thông tin tài khoản từ DB.
+     b) `passwordEncoder.matches("admin123", account.getPassword())`: So sánh chuỗi mật khẩu thô "admin123" với chuỗi mã hóa BCrypt `$2a$10$...` trong DB.
+     c) `employeeRepository.findById("ADMIN001")`: Lấy tên hiển thị "System Administrator".
+     d) `jwtUtils.generateTokenForEmployee("ADMIN001", "ROLE_ADMIN")`: Khởi tạo Token JWT bằng SecretKey.
+     e) Trả về `AuthResponse` bọc trong `ApiResponse.success()`.
+
+5. REPOSITORY / DATABASE:
+   - File: `src/main/java/com/example/hrm/repository/UserAccountRepository.java`
+   - SQL: `SELECT * FROM user_accounts WHERE employee_id = 'ADMIN001'`
+   - File: `src/main/java/com/example/hrm/repository/EmployeeRepository.java`
+   - SQL: `SELECT * FROM employees WHERE employee_id = 'ADMIN001'`
+
+6. FRONTEND RENDER:
+   - File: `app.js` ➔ `handleLogin()` nhận Token ➔ Lưu vào `localStorage.setItem('token', token)`.
+   - Gọi `setupUserUI()` ➔ Gắn Badge màu đỏ "ADMIN".
+   - Gọi `loadDashboard()` ➔ Phát hiện `role === 'ROLE_ADMIN'`, mở Bảng Quản lý Admin (`#adminPanel`) và gọi `fetchEmployees()`.
+
+
+--------------------------------------------------------------------------------
+LUỒNG 2: NGƯỜI DÙNG (NHÂN VIÊN THƯỜNG) ĐĂNG NHẬP VÀ XEM HỒ SƠ
+--------------------------------------------------------------------------------
+Kịch bản: Nhân viên "EMP001" đăng nhập và chỉ được xem hồ sơ của mình.
+
+1. FRONTEND LOGIN:
+   - File: `app.js` ➔ `handleLogin()` gửi POST `/api/auth/login` với `"EMP001"` & `"user123"`.
+
+2. BACKEND AUTHENTICATION:
+   - File: `AuthServiceImpl.java` ➔ `login()` xác thực thành công tài khoản EMP001 có quyền `"ROLE_EMPLOYEE"`.
+   - Trả về Token JWT chứa `sub: "EMP001"`, `role: "ROLE_EMPLOYEE"`.
+
+3. FRONTEND NAVIGATION:
+   - File: `app.js` ➔ `loadDashboard()` nhận diện `role === 'ROLE_EMPLOYEE'`.
+   - Ẩn màn hình Admin (`#adminPanel`), Mở màn hình Hồ sơ cá nhân (`#employeePanel`).
+   - Gọi `fetchMyProfile()`.
+
+4. FETCH MY PROFILE REQUEST:
+   - File: `app.js` ➔ `fetchMyProfile()` gửi `GET /api/employees/me` kèm Header `Authorization: Bearer <token>`.
+
+5. SECURITY INTERCEPTOR:
+   - File: `JwtAuthenticationFilter.java` ➔ `doFilterInternal()` giải mã Token ➔ Lấy `EMP001` & `ROLE_EMPLOYEE` nạp vào `SecurityContextHolder`.
+
+6. CONTROLLER & SERVICE:
+   - File: `EmployeeController.java` ➔ `getMyProfile()` gọi `employeeService.getEmployeeById("EMP001", "EMP001", false)`.
+   - File: `EmployeeServiceImpl.java` ➔ `getEmployeeById()` kiểm tra:
+     `isSelf = "EMP001".equalsIgnoreCase("EMP001")` ➔ `true`.
+     Gọi `EmployeeResponse.fromEntity(employee, true)` ➔ Cho phép bao gồm Lương cá nhân.
+
+7. FRONTEND PROFILE RENDER:
+   - File: `app.js` ➔ `fetchMyProfile()` cập nhật các thẻ HTML hiển thị Họ tên Alex Johnson, Tuổi (tính từ DOB), Phòng ban, Lương và Tài khoản ngân hàng.
+
+
+--------------------------------------------------------------------------------
+LUỒNG 3: ADMIN QUẢN LÝ NHÂN SỰ (XEM, TẠO, SỬA, XÓA)
+--------------------------------------------------------------------------------
+
+3.1. XEM DANH SÁCH, TÌM KIẾM & LỌC (READ / SEARCH / FILTER)
+- Frontend: `app.js` ➔ `fetchEmployees()` đọc giá trị ô tìm kiếm "Alex" và ô lọc "FULL_TIME" ➔ Gửi `GET /api/employees?name=Alex&employeeType=FULL_TIME`.
+- Security: `JwtAuthenticationFilter.java` giải mã Token Admin ➔ Nạp quyền `ROLE_ADMIN`.
+- Controller: `EmployeeController.java` ➔ `getAllEmployees()` xác nhận `isAdmin = true` ➔ Gọi `employeeService.getAllEmployees("Alex", FULL_TIME, "ADMIN001", true)`.
+- Service (Java 8 Streams): `EmployeeServiceImpl.java` ➔ `getAllEmployees()`:
+  + Nối tới DB qua `employeeRepository.findByFullNameContainingIgnoreCaseAndEmployeeType("Alex", FULL_TIME)`.
+  + Dùng Stream API chuyển đổi dữ liệu:
+    ```java
+    return employees.stream()
+        .map(emp -> EmployeeResponse.fromEntity(emp, true))
+        .collect(Collectors.toList());
+    ```
+- Repository SQL: `SELECT * FROM employees WHERE LOWER(full_name) LIKE '%alex%' AND employee_type = 'FULL_TIME'`.
+- Frontend Render: `app.js` ➔ `renderEmployeeTable()` vẽ danh sách nhân viên ra bảng HTML.
+
+3.2. THÊM MỚI NHÂN VIÊN (CREATE)
+- Frontend: Admin điền Form Modal `#employeeModal` ➔ Bấm Save ➔ `app.js` ➔ `handleSaveEmployee()` gửi `POST /api/employees` kèm JSON `empData` và Header Token Admin.
+- Security Check: `EmployeeController.java` ➔ `@PreAuthorize("hasAuthority('ROLE_ADMIN')")` kiểm tra nếu không phải Admin ➔ Chặn lỗi 403.
+- Controller: `EmployeeController.java` ➔ `createEmployee(@Valid @RequestBody EmployeeRequest request)` gọi `employeeService.createEmployee(request)`.
+- Service Validation & Persist: `EmployeeServiceImpl.java` ➔ `createEmployee()`:
+  + Check trùng Mã NV: `employeeRepository.existsById(empId)` (Nếu trùng ➔ Ném `DuplicateResourceException`).
+  + Check trùng Email: `employeeRepository.existsByEmail(email)` (Nếu trùng ➔ Ném `DuplicateResourceException`).
+  + Copy dữ liệu DTO sang Entity ➔ Gọi `employeeRepository.save(employee)`.
+- Repository SQL: `INSERT INTO employees (employee_id, full_name, ...) VALUES (...)`.
+- Frontend: `app.js` đóng Modal, hiện Toast thông báo thành công, gọi `fetchEmployees()` làm mới bảng.
+
+3.3. SỬA THÔNG TIN NHÂN VIÊN (UPDATE)
+- Frontend: Admin bấm nút Sửa ➔ `app.js` ➔ `openEditModal('EMP001')` đổ dữ liệu cũ vào Form. Sửa dữ liệu ➔ Bấm Save ➔ `handleSaveEmployee()` gửi `PUT /api/employees/EMP001`.
+- Controller: `EmployeeController.java` ➔ `updateEmployee(@PathVariable("id") String id, @Valid @RequestBody request)`.
+- Service: `EmployeeServiceImpl.java` ➔ `updateEmployee()`:
+  + Tìm nhân viên cũ `employeeRepository.findById(id)` (Nếu không có ➔ Ném `ResourceNotFoundException`).
+  + Check email mới nếu đổi có trùng ai khác không.
+  + Cập nhật các giá trị mới ➔ `employeeRepository.save(employee)`.
+- Frontend: Đóng Modal, hiện Toast thành công, reload danh sách.
+
+3.4. XÓA NHÂN VIÊN (DELETE)
+- Frontend: Admin bấm nút Xóa ➔ `app.js` ➔ `deleteEmployee('EMP001')` hiện hộp thoại `confirm()`. Đồng ý ➔ Gửi `DELETE /api/employees/EMP001`.
+- Controller: `EmployeeController.java` ➔ `deleteEmployee(@PathVariable("id") String id)` (được bảo vệ bởi `@PreAuthorize`).
+- Service: `EmployeeServiceImpl.java` ➔ `deleteEmployee()` check `existsById(id)` và gọi `employeeRepository.deleteById(id)`.
+- Repository SQL: `DELETE FROM employees WHERE employee_id = 'EMP001'`.
+- Frontend: Hiện Toast "Employee deleted successfully" và làm mới lại bảng.
+
+
+================================================================================
+PHẦN 4: GIẢI THÍCH CHUYÊN SÂU KHÁI NIỆM KÈM VÍ DỤ CODE THỰC TẾ
+================================================================================
+
+1. TẠI SAO LẠI PHÂN CHIA CẤU TRÚC THƯ MỤC THEO "PACKAGE BY LAYER"?
+--------------------------------------------------------------------------------
+Dự án được phân chia theo cấu trúc tầng chuẩn Enterprise:
+- `config`: Chứa toàn bộ các class thiết lập hệ thống (Security, Seed Data).
+- `controller`: Chỉ chịu trách nhiệm tiếp nhận và phản hồi dữ liệu HTTP REST API.
+- `dto`: Chứa các class đóng gói dữ liệu Request & Response.
+- `entity`: Chứa các class ánh xạ trực tiếp với bảng trong Database (JPA).
+- `exception`: Chứa bộ xử lý lỗi toàn cục tự động.
+- `repository`: Chứa các interface truy vấn Database.
+- `security`: Chứa các class xử lý thuật toán mã hóa Token JWT.
+- `service` & `service/impl`: Chứa bộ não xử lý nghiệp vụ chính của ứng dụng.
+- `util`: Chứa các hàm tiện ích dùng chung (tính tuổi).
+
+=> LỢI ÍCH:
+- Separation of Concerns (Phân chia trách nhiệm rõ ràng): Controller không quan tâm DB lưu thế nào, Repository không quan tâm ai gọi API.
+- Tăng khả năng bảo trì và bảo mật: Khi sửa đổi DB hay thêm bảng mới, giao diện Web không bị ảnh hưởng.
+
+
+2. ANNOTATION `@Transactional` LÀ GÌ? (CƠ CHẾ & VÍ DỤ CODE)
+--------------------------------------------------------------------------------
+- Công dụng: Đảm bảo tính toàn vẹn dữ liệu DB theo chuẩn ACID.
+- Cơ chế AOP Dynamic Proxy:
+  + Trước khi hàm chạy: Spring tự động mở một Giao dịch (`BEGIN TRANSACTION`).
+  + Nếu hàm thực thi êm đẹp: Spring tự động chốt dữ liệu xuống DB (`COMMIT`).
+  + Nếu giữa chừng xảy ra LỖI/Exception: Spring tự động RÚT LẠI toàn bộ các câu lệnh đã chạy trước đó (`ROLLBACK`), đưa DB về trạng thái an toàn ban đầu!
+
+VD Code thực tế trong dự án (tại `AuthServiceImpl.java`):
+```java
+@Override
+@Transactional
+public AuthResponse register(RegisterRequest registerRequest) {
+    // Bước 1: Lưu hồ sơ nhân viên mới vào bảng `employees`
+    Employee savedEmp = employeeRepository.save(newEmp);
+
+    // Bước 2: Lưu tài khoản mới vào bảng `user_accounts`
+    UserAccount userAccount = new UserAccount(empId, encodedPass, role);
+    userAccountRepository.save(userAccount);
+
+    // 💡 NẾU Bước 2 bị lỗi (VD: Mất mạng DB hay trùng khóa):
+    // Nhờ có @Transactional, dữ liệu ở Bước 1 sẽ TỰ ĐỘNG BỊ ROLLBACK XÓA KHỎI DB!
+    // Tránh tình trạng "Hồ sơ nhân viên thì tạo được nhưng Tài khoản lại không có"!
+    return new AuthResponse(token, empId, savedEmp.getFullName(), role.name());
+}
+```
+
+Phân biệt:
+- `@Transactional`: Dùng cho các thao tác Thêm/Sửa/Xóa (Write).
+- `@Transactional(readOnly = true)`: Dùng cho thao tác Đọc dữ liệu (Read), giúp Hibernate tối ưu hóa bộ nhớ RAM và không tốn công theo dõi biến động dữ liệu (Dirty Checking).
+
+
+3. `@Autowired` VS CONSTRUCTOR INJECTION TRONG SPRING BOOT
+--------------------------------------------------------------------------------
+Trong Spring Boot có 2 cách để tiêm (inject) Bean:
+
+Cách 1: Dùng `@Autowired` trên thuộc tính (Field Injection - KHÔNG KHUYÊN DÙNG):
+```java
+@RestController
+public class EmployeeController {
+    @Autowired
+    private EmployeeService employeeService; // Khó viết Unit Test, nguy cơ NullPointerException
+}
+```
+
+Cách 2: Constructor Injection (CÁCH CHUẨN ĐANG DÙNG TRONG DỰ ÁN):
+```java
+@RestController
+public class EmployeeController {
+    private final EmployeeService employeeService;
+
+    // Spring Boot 2.x/3.x tự động tiêm Bean qua Constructor mà KHÔNG CẦN gõ @Autowired!
+    public EmployeeController(EmployeeService employeeService) {
+        this.employeeService = employeeService;
+    }
+}
+```
+=> LỢI ÍCH CỦA CONSTRUCTOR INJECTION:
+- Biến `final` đảm bảo tính bất biến (Immutability).
+- Dễ dàng viết Unit Test (như file `EmployeeServiceTest.java`) bằng cách truyền Mock object trực tiếp vào Constructor mà không cần bật cả framework Spring.
+
+
+4. JAVA 8 STREAM API & LAMBDA EXPRESSIONS (CÚ PHÁP & VÍ DỤ CODE)
+--------------------------------------------------------------------------------
+- **Lambda Expression (`->`)**: Cú pháp viết hàm ngắn gọn thay cho việc tạo Anonymous Class rườm rà.
+  Ví dụ: `emp -> EmployeeResponse.fromEntity(emp, true)`
+
+- **Stream API (`.stream()`)**: Bộ công cụ xử lý danh sách dữ liệu theo phong cách Functional Programming (Lọc, Biến đổi, Gom nhóm) cực kỳ tối ưu.
+
+VD Code thực tế trong dự án (tại `EmployeeServiceImpl.java`):
+```java
+@Override
+public List<EmployeeResponse> getAllEmployees(...) {
+    List<Employee> employees = employeeRepository.findAll();
+
+    // Dùng Stream API để biến đổi toàn bộ danh sách Entity thành danh sách DTO:
+    return employees.stream() // 1. Chuyển List thành Stream chuỗi dữ liệu
+        .map(emp -> {         // 2. Hàm map(): Biến đổi từng đối tượng Employee thành EmployeeResponse
+            boolean includeSalary = isAdmin || emp.getEmployeeId().equalsIgnoreCase(requesterId);
+            return EmployeeResponse.fromEntity(emp, includeSalary);
+        })
+        .collect(Collectors.toList()); // 3. Thu thập toàn bộ kết quả về dạng List<EmployeeResponse>
+}
+```
+
+
+5. MÔ HÌNH DTO (DATA TRANSFER OBJECT) & BẢO MẬT DỮ LIỆU
+--------------------------------------------------------------------------------
+Tại sao KHÔNG TRẢ TRỰC TIẾP `@Entity` cho Frontend mà phải dùng DTO?
+- Tránh lộ thông tin nhạy cảm: `UserAccount` chứa mật khẩu hash `password`, `Employee` chứa `salary`. Nếu trả Entity thẳng về màn hình, hacker có thể đọc được dữ liệu nhạy cảm.
+- Tránh lỗi vòng lặp vô tận (Infinite Recursion) khi JSON Serialize các mối quan hệ bảng.
+- DTO giúp linh hoạt che đậy dữ liệu theo phân quyền.
+
+VD Code thực tế bảo mật Lương trong DTO (tại `EmployeeResponse.java`):
+```java
+public static EmployeeResponse fromEntity(Employee entity, boolean includeSalary) {
+    EmployeeResponse response = new EmployeeResponse();
+    response.setEmployeeId(entity.getEmployeeId());
+    response.setFullName(entity.getFullName());
+    response.setAge(entity.getAge()); // Đọc tuổi tính động từ getAge()
+
+    // 🔒 NẾU includeSalary == false ➔ Gán lương = null để ẩn khỏi người dùng không có quyền!
+    if (includeSalary) {
+        response.setSalary(entity.getSalary());
+    } else {
+        response.setSalary(null);
+    }
+    return response;
+}
+```
+
+
+================================================================================
+PHẦN 5: HƯỚNG DẪN ĐIỀU CHỈNH CONFIG BACKEND & KẾT NỐI ORACLE DOCKER / DBEAVER
+================================================================================
+
+1. CẤU TRÚC FILE CONFIG SPRING PROFILES TRONG BACKEND
+--------------------------------------------------------------------------------
+Thư mục: `src/main/resources/`
+
+A. File `application.properties` (File điều phối Profile chính):
+   ```properties
+   spring.profiles.active=prod
+   server.port=8080
+   jwt.secret=c2VjcmV0S2V5Rm9ySFJNTWFuYWdlbWVudFN5c3RlbUpXVENvbXBhbnlBcHAyMDI2
+   jwt.expiration-ms=86400000
+   ```
+   👉 Khi muốn đổi sang dùng H2 RAM: Sửa dòng `spring.profiles.active=dev`.
+   👉 Khi muốn dùng Oracle DB Docker: Để nguyên `spring.profiles.active=prod`.
+
+B. File `application-prod.properties` (Cấu hình Oracle DB Docker - Cổng 1522):
+   ```properties
+   spring.datasource.url=jdbc:oracle:thin:@localhost:1522/FREEPDB1
+   spring.datasource.driverClassName=oracle.jdbc.OracleDriver
+   spring.datasource.username=hrm_user
+   spring.datasource.password=hrm123
+
+   spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
+   spring.jpa.hibernate.ddl-auto=update
+   spring.jpa.show-sql=true
+   spring.jpa.properties.hibernate.format_sql=true
+   ```
+
+C. File `application-dev.properties` (Cấu hình dự phòng H2 RAM):
+   ```properties
+   spring.datasource.url=jdbc:h2:mem:hrmdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+   spring.datasource.driverClassName=org.h2.Driver
+   spring.datasource.username=sa
+   spring.datasource.password=
+   spring.h2.console.enabled=true
+   ```
+
+
+2. CẤU HÌNH DOCKER COMPOSE TÁCH BIỆT (FILE `docker-compose.yml`)
+--------------------------------------------------------------------------------
+Thư mục: Root dự án (`c:\Users\TSC\Desktop\Work\demo2\docker-compose.yml`)
+
+```yaml
+version: '3.8'
+
+services:
+  pulse-hrm-oracle:
+    image: gvenzl/oracle-free:latest
+    container_name: pulse-hrm-oracle
+    ports:
+      - "1522:1521"
+    environment:
+      - ORACLE_PASSWORD=oracle123
+      - APP_USER=hrm_user
+      - APP_USER_PASSWORD=hrm123
+    volumes:
+      - pulse-hrm-data:/gvenzl/oracle-free
+    restart: always
+
+volumes:
+  pulse-hrm-data:
+```
+
+💡 LƯU Ý QUAN TRỌNG VỀ CỔNG (PORT 1522):
+- Host Port được cấu hình là `1522:1521` ➔ Đảm bảo Container của dự án này chạy ở Cổng **1522**, HOÀN TOÀN ĐỘC LẬP và không bao giờ bị đụng độ với Cổng `1521` của dự án khác trên máy bạn!
+
+Các lệnh Terminal thao tác Docker:
+- Bật Container Oracle: `docker compose up -d`
+- Tắt Container Oracle: `docker compose down`
+- Xem log Container: `docker logs pulse-hrm-oracle`
+
+
+3. HƯỚNG DẪN KẾT NỐI DBEAVER VỚI ORACLE DATABASE TỪ A TỚI Z (STEP-BY-STEP)
+--------------------------------------------------------------------------------
+Bước 1: Khởi động phần mềm DBeaver.
+Bước 2: Chọn Menu: `Database` ➔ `New Database Connection`.
+Bước 3: Chọn hệ quản trị **Oracle** ➔ Bấm **Next**.
+Bước 4: Tại cửa sổ Main Configuration, điền đúng các giá trị sau:
+   - Connect by: Chọn **Service Name**
+   - Host: `localhost`
+   - Port: **`1522`** (RẤT QUAN TRỌNG: Phải là 1522 để trỏ đúng vào Container dự án này!)
+   - Service Name: `FREEPDB1`
+   - Username: `hrm_user`
+   - Password: `hrm123`
+Bước 5: Ấn nút **Test Connection...** ➔ DBeaver báo thông báo màu xanh `Connected` ➔ Bấm OK ➔ Bấm **Finish**.
+Bước 6: Mở Connection vừa tạo ➔ Mở mục **Tables** ➔ Bạn sẽ thấy ngay 2 bảng chính chủ:
+   - 📋 `EMPLOYEES` (Chứa dữ liệu nhân viên)
+   - 🔑 `USER_ACCOUNTS` (Chứa tài khoản đăng nhập)
+
+
+4. CÁCH CHẠY ỨNG DỤNG BACKEND VÀ KIỂM TRA
+--------------------------------------------------------------------------------
+Bước 1: Bật Container Docker (nếu chưa bật):
+   `docker compose up -d`
+
+Bước 2: Chạy Backend Spring Boot bằng Terminal:
+   `.\mvnw.cmd spring-boot:run`
+
+Bước 3: Mở Web App trải nghiệm tại địa chỉ:
+   `http://localhost:8080`
+
+Bước 4: Sang DBeaver ấn **F5 (Refresh)** để soi dữ liệu biến động tức thì trong đĩa cứng!
+
+================================================================================
