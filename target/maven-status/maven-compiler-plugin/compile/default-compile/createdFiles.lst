@@ -11,7 +11,6 @@ com\example\hrm\security\CustomUserDetails.class
 com\example\hrm\service\EmployeeService.class
 com\example\hrm\service\impl\AuthServiceImpl.class
 com\example\hrm\entity\Role.class
-com\example\hrm\config\DataInitializer.class
 com\example\hrm\exception\ResourceNotFoundException.class
 com\example\hrm\dto\response\EmployeeResponse.class
 com\example\hrm\security\JwtUtils.class

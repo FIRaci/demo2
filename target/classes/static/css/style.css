@@ -701,3 +701,91 @@ body {
     from { transform: translateY(100%); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+/* =========================================
+   MONOCHROME B&W OVERRIDES (As requested)
+========================================= */
+:root {
+    --bg-main: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f9fafb;
+    --bg-input: #ffffff;
+    --primary: #000000;
+    --primary-hover: #333333;
+    --success: #000000;
+    --success-hover: #333333;
+    --danger: #000000;
+    --danger-hover: #333333;
+    --warning: #000000;
+    --text-main: #000000;
+    --text-muted: #666666;
+    --border-color: #000000;
+    
+    /* Remove rounded corners and shadows for simpler look */
+    --radius-lg: 0px;
+    --radius-md: 0px;
+    --radius-sm: 0px;
+    --shadow-glow: none;
+    --shadow-card: none;
+}
+
+/* Force flat backgrounds and black borders */
+body, .navbar, .auth-card, .table-responsive, .profile-card-container, .modal-card, .toast {
+    background: #ffffff !important;
+    border: 1px solid #000000 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
+/* Remove colored backgrounds for badges/chips */
+.badge-admin, .badge-employee, .badge-fulltime, .badge-parttime, .btn-chip, .icon-box, .highlight-card, .user-badge {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+}
+
+/* Profile overrides */
+.profile-header-banner {
+    background: #ffffff !important;
+    border-bottom: 1px solid #000000 !important;
+}
+.avatar-large {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+}
+
+/* Tables and Modals */
+.data-table th, .modal-footer, .tab-buttons {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+}
+.data-table td, .detail-card, .detail-row {
+    border: 1px solid #000000 !important;
+    background: #ffffff !important;
+}
+.data-table th, .data-table td {
+    border: 1px solid #000000 !important;
+}
+.data-table {
+    border-collapse: collapse;
+}
+
+/* Outline buttons */
+.btn-outline-danger {
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+.btn-outline-danger:hover {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+.tab-btn.active {
+    box-shadow: none !important;
+}
+.logo-icon, .logo-text span, .avatar-icon, .search-icon {
+    color: #000000 !important;
+}
+

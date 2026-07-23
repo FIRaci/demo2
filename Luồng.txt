@@ -131,11 +131,11 @@ Kịch bản: Admin nhập ID "ADMIN001" và mật khẩu "admin123" tại Form 
    - File: `src/main/java/com/example/hrm/service/impl/AuthServiceImpl.java`
    - Method: `login(LoginRequest loginRequest)`
    - Chi tiết từng câu lệnh:
-     a) `userAccountRepository.findByEmployeeId("ADMIN001")`: Đọc thông tin tài khoản từ DB.
-     b) `passwordEncoder.matches("admin123", account.getPassword())`: So sánh chuỗi mật khẩu thô "admin123" với chuỗi mã hóa BCrypt `$2a$10$...` trong DB.
-     c) `employeeRepository.findById("ADMIN001")`: Lấy tên hiển thị "System Administrator".
-     d) `jwtUtils.generateTokenForEmployee("ADMIN001", "ROLE_ADMIN")`: Khởi tạo Token JWT bằng SecretKey.
-     e) Trả về `AuthResponse` bọc trong `ApiResponse.success()`.
+     a) Sử dụng Spring Security `authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(empId, pass))`:
+        Spring Security tự động nạp UserDetails via `CustomUserDetailsService`, đối chiếu mật khẩu mã hóa BCrypt và nạp SecurityContext.
+     b) `employeeRepository.findById("ADMIN001")`: Lấy tên hiển thị "System Administrator".
+     c) `jwtUtils.generateToken(authentication)`: Khởi tạo Token JWT bằng SecretKey.
+     d) Trả về `AuthResponse` bọc trong `ApiResponse.success()`.
 
 5. REPOSITORY / DATABASE:
    - File: `src/main/java/com/example/hrm/repository/UserAccountRepository.java`
@@ -456,13 +456,15 @@ Bước 6: Mở Connection vừa tạo ➔ Mở mục **Tables** ➔ Bạn sẽ 
    - 🔑 `USER_ACCOUNTS` (Chứa tài khoản đăng nhập)
 
 
-4. CÁCH CHẠY ỨNG DỤNG BACKEND VÀ KIỂM TRA
+4. CÁCH CHẠY ỨNG DỤNG BACKEND (TỰ ĐỘNG GIẢI PHÓNG CỔNG 8080)
 --------------------------------------------------------------------------------
 Bước 1: Bật Container Docker (nếu chưa bật):
    `docker compose up -d`
 
-Bước 2: Chạy Backend Spring Boot bằng Terminal:
-   `.\mvnw.cmd spring-boot:run`
+Bước 2: Chạy Backend bằng File Script Tự Động 解放 Cổng 8080:
+   - Trong PowerShell: `.\run.ps1`
+   - Trong CMD / Double Click: `.\run.bat`
+   (Script sẽ tự động phát hiện và giải phóng PID chiếm dụng Cổng 8080 trước khi bật Spring Boot, không bao giờ bị đụng độ cổng!)
 
 Bước 3: Mở Web App trải nghiệm tại địa chỉ:
    `http://localhost:8080`

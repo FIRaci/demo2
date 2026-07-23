@@ -1,2 +1,4 @@
 com\example\hrm\service\EmployeeServiceTest.class
+com\example\HashGen.class
+com\example\hrm\service\AuthServiceTest.class
 com\example\hrm\util\AgeCalculatorTest.class

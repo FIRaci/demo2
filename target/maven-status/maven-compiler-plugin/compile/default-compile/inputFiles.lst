@@ -2,7 +2,6 @@ C:\Users\TSC\Desktop\Work\demo2\src\main\java\com\example\hrm\service\AuthServic
 C:\Users\TSC\Desktop\Work\demo2\src\main\java\com\example\hrm\security\CustomUserDetailsService.java
 C:\Users\TSC\Desktop\Work\demo2\src\main\java\com\example\hrm\dto\response\EmployeeResponse.java
 C:\Users\TSC\Desktop\Work\demo2\src\main\java\com\example\hrm\entity\EmployeeType.java
-C:\Users\TSC\Desktop\Work\demo2\src\main\java\com\example\hrm\config\DataInitializer.java
 C:\Users\TSC\Desktop\Work\demo2\src\main\java\com\example\hrm\exception\GlobalExceptionHandler.java
 C:\Users\TSC\Desktop\Work\demo2\src\main\java\com\example\hrm\config\SecurityConfig.java
 C:\Users\TSC\Desktop\Work\demo2\src\main\java\com\example\hrm\dto\response\AuthResponse.java
