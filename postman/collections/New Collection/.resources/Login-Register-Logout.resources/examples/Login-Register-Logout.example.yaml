@@ -1,0 +1,45 @@
+$kind: http-example
+name: Login/Register/Logout
+request:
+  url: http://localhost:8080/api/auth/login
+  method: POST
+  body:
+    type: json
+    content: "{\r
+
+      \    \"employeeId\": \"EMP001\",\r
+
+      \    \"password\": \"admin123\"\r
+
+      }"
+response:
+  statusCode: 200
+  statusText: ""
+  headers:
+    vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers
+    x-content-type-options: nosniff
+    x-xss-protection: "0"
+    cache-control: no-cache, no-store, max-age=0, must-revalidate
+    pragma: no-cache
+    expires: "0"
+    x-frame-options: SAMEORIGIN
+    content-type: application/json
+    transfer-encoding: chunked
+    date: Thu, 23 Jul 2026 02:59:43 GMT
+    keep-alive: timeout=60
+    connection: keep-alive
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Login successful",
+        "data": {
+          "token": "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJFTVAwMDEiLCJyb2xlIjoiUk9MRV9FTVBMT1lFRSIsImlhdCI6MTc4NDc3NTU4MywiZXhwIjoxNzg0ODYxOTgzfQ.nrkx9prnPVFyfYYEh_TVSj6YiZeHBSWF8KUiBvdjA8G_lY6rfPHRZshK0I1Wqd2c",
+          "tokenType": null,
+          "employeeId": "EMP001",
+          "fullName": "Nguyễn Thị Phương Thảo",
+          "role": "ROLE_EMPLOYEE"
+        }
+      }
+order: 3028125940133980

@@ -1,19 +1,26 @@
 package com.example.hrm.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Schema(description = "Wrapper phản hồi chuẩn của API")
 public class ApiResponse<T> {
 
+    @Schema(description = "Trạng thái thành công hay thất bại", example = "true")
     private boolean success;
+
+    @Schema(description = "Thông điệp phản hồi", example = "Operation successful")
     private String message;
+
+    @Schema(description = "Dữ liệu trả về")
     private T data;
-
-    public ApiResponse() {
-    }
-
-    public ApiResponse(boolean success, String message, T data) {
-        this.success = success;
-        this.message = message;
-        this.data = data;
-    }
 
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(true, "Operation successful", data);
@@ -25,29 +32,5 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(false, message, null);
-    }
-
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public void setSuccess(boolean success) {
-        this.success = success;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public T getData() {
-        return data;
-    }
-
-    public void setData(T data) {
-        this.data = data;
     }
 }

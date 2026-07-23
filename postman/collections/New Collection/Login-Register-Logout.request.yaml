@@ -1,0 +1,6 @@
+$kind: http-request
+name: Login/Register/Logout
+url: ""
+method: GET
+examples: .resources/Login-Register-Logout.resources/examples
+order: 3980107137700354

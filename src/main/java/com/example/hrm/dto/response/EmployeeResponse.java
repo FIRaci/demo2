@@ -3,164 +3,80 @@ package com.example.hrm.dto.response;
 import com.example.hrm.entity.Employee;
 import com.example.hrm.entity.EmployeeType;
 import com.example.hrm.entity.Gender;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Schema(description = "Thông tin phản hồi hồ sơ Nhân viên")
 public class EmployeeResponse {
 
+    @Schema(description = "Mã nhân viên", example = "EMP001")
     private String employeeId;
+
+    @Schema(description = "Họ và tên", example = "Nguyễn Thị Phương Thảo")
     private String fullName;
+
+    @Schema(description = "Ngày sinh", example = "1995-05-20")
     private LocalDate dateOfBirth;
+
+    @Schema(description = "Tuổi (tính toán tự động từ ngày sinh)", example = "31")
     private Integer age;
+
+    @Schema(description = "Giới tính (MALE, FEMALE, OTHER)", example = "FEMALE")
     private Gender gender;
+
+    @Schema(description = "Email công ty", example = "thao.ntp@company.com")
     private String email;
+
+    @Schema(description = "Số điện thoại", example = "+84-912-345-678")
     private String phone;
+
+    @Schema(description = "Địa chỉ thường trú", example = "456 Đường Lê Lợi, Quận 1, TP.HCM")
     private String address;
+
+    @Schema(description = "Loại hình làm việc (FULL_TIME, PART_TIME)", example = "FULL_TIME")
     private EmployeeType employeeType;
+
+    @Schema(description = "Phòng ban công tác", example = "Phòng Kỹ thuật")
     private String department;
+
+    @Schema(description = "Chức danh / Vị trí", example = "Kỹ sư Phần mềm")
     private String position;
+
+    @Schema(description = "Mức lương (VND) - Chỉ hiển thị cho ROLE_ADMIN hoặc chính bản thân nhân viên", example = "35000000.00")
     private BigDecimal salary;
+
+    @Schema(description = "Tên ngân hàng thụ hưởng", example = "Techcombank")
     private String bankName;
+
+    @Schema(description = "Số tài khoản ngân hàng", example = "190123456789")
     private String accountNumber;
 
-    public EmployeeResponse() {
-    }
-
     public static EmployeeResponse fromEntity(Employee entity, boolean includeSalary) {
-        EmployeeResponse response = new EmployeeResponse();
-        response.setEmployeeId(entity.getEmployeeId());
-        response.setFullName(entity.getFullName());
-        response.setDateOfBirth(entity.getDateOfBirth());
-        response.setAge(entity.getAge());
-        response.setGender(entity.getGender());
-        response.setEmail(entity.getEmail());
-        response.setPhone(entity.getPhone());
-        response.setAddress(entity.getAddress());
-        response.setEmployeeType(entity.getEmployeeType());
-        response.setDepartment(entity.getDepartment());
-        response.setPosition(entity.getPosition());
-        response.setBankName(entity.getBankName());
-        response.setAccountNumber(entity.getAccountNumber());
-
-        if (includeSalary) {
-            response.setSalary(entity.getSalary());
-        } else {
-            response.setSalary(null);
-        }
-
-        return response;
-    }
-
-    public String getEmployeeId() {
-        return employeeId;
-    }
-
-    public void setEmployeeId(String employeeId) {
-        this.employeeId = employeeId;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public Integer getAge() {
-        return age;
-    }
-
-    public void setAge(Integer age) {
-        this.age = age;
-    }
-
-    public Gender getGender() {
-        return gender;
-    }
-
-    public void setGender(Gender gender) {
-        this.gender = gender;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public EmployeeType getEmployeeType() {
-        return employeeType;
-    }
-
-    public void setEmployeeType(EmployeeType employeeType) {
-        this.employeeType = employeeType;
-    }
-
-    public String getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(String department) {
-        this.department = department;
-    }
-
-    public String getPosition() {
-        return position;
-    }
-
-    public void setPosition(String position) {
-        this.position = position;
-    }
-
-    public BigDecimal getSalary() {
-        return salary;
-    }
-
-    public void setSalary(BigDecimal salary) {
-        this.salary = salary;
-    }
-
-    public String getBankName() {
-        return bankName;
-    }
-
-    public void setBankName(String bankName) {
-        this.bankName = bankName;
-    }
-
-    public String getAccountNumber() {
-        return accountNumber;
-    }
-
-    public void setAccountNumber(String accountNumber) {
-        this.accountNumber = accountNumber;
+        return EmployeeResponse.builder()
+                .employeeId(entity.getEmployeeId())
+                .fullName(entity.getFullName())
+                .dateOfBirth(entity.getDateOfBirth())
+                .age(entity.getAge())
+                .gender(entity.getGender())
+                .email(entity.getEmail())
+                .phone(entity.getPhone())
+                .address(entity.getAddress())
+                .employeeType(entity.getEmployeeType())
+                .department(entity.getDepartment())
+                .position(entity.getPosition())
+                .bankName(entity.getBankName())
+                .accountNumber(entity.getAccountNumber())
+                .salary(includeSalary ? entity.getSalary() : null)
+                .build();
     }
 }
