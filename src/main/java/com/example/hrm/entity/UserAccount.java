@@ -1,9 +1,15 @@
 package com.example.hrm.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "user_accounts")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserAccount {
 
     @Id
@@ -20,44 +26,9 @@ public class UserAccount {
     @Column(name = "role", nullable = false)
     private Role role;
 
-    public UserAccount() {
-    }
-
     public UserAccount(String employeeId, String password, Role role) {
         this.employeeId = employeeId;
         this.password = password;
-        this.role = role;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getEmployeeId() {
-        return employeeId;
-    }
-
-    public void setEmployeeId(String employeeId) {
-        this.employeeId = employeeId;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
         this.role = role;
     }
 }
