@@ -14,6 +14,7 @@ class AgeCalculatorTest {
         assertEquals(25, age);
     }
 
+    // Test case when dob is null
     @Test
     void testCalculateAge_NullInput() {
         assertNull(AgeCalculator.calculateAge(null));
