@@ -15,7 +15,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class Employee {
-
     @Id
     @Column(name = "employee_id", length = 50, nullable = false, unique = true)
     private String employeeId;
