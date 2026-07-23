@@ -34,7 +34,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                     .map(emp -> Collections.singletonList(EmployeeResponse.fromEntity(emp, true)))
                     .orElse(Collections.emptyList());
         }
-
+        
         List<Employee> employees;
         boolean hasName = StringUtils.hasText(name);
 
