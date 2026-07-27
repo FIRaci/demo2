@@ -16,7 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/employees")
@@ -32,15 +32,18 @@ public class EmployeeController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách nhân viên", description = "Tìm kiếm và lọc danh sách nhân viên theo tên hoặc loại hình làm việc (FULL_TIME, PART_TIME)")
-    public ResponseEntity<ApiResponse<List<EmployeeResponse>>> getAllEmployees(
+    public ResponseEntity<ApiResponse<com.example.hrm.dto.response.PageResponse<EmployeeResponse>>> getAllEmployees(
             @Parameter(description = "Tên nhân viên cần tìm kiếm (VD: Thảo, Bách)", example = "Thảo") @RequestParam(required = false) String name,
             @Parameter(description = "Loại hình làm việc (FULL_TIME, PART_TIME)", example = "FULL_TIME") @RequestParam(required = false) EmployeeType employeeType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         boolean isAdmin = userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-        List<EmployeeResponse> list = employeeService.getAllEmployees(name, employeeType, userDetails.getEmployeeId(), isAdmin);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        com.example.hrm.dto.response.PageResponse<EmployeeResponse> list = employeeService.getAllEmployees(name, employeeType, userDetails.getEmployeeId(), isAdmin, pageable);
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 

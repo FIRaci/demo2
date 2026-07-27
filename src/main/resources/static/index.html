@@ -101,6 +101,30 @@
 
         <!-- DASHBOARD VIEW -->
         <main id="dashboardView" class="main-content hidden">
+            <!-- DASHBOARD TABS -->
+            <div id="dashboardTabs" class="tab-buttons" style="margin-bottom: 20px;">
+                <!-- Admin Tabs -->
+                <button id="tabAdminEmployees" class="tab-btn active hidden" onclick="switchDashboardTab('adminEmployees')">
+                    <i class="fa-solid fa-users"></i> Employees
+                </button>
+                <button id="tabAdminProjects" class="tab-btn hidden" onclick="switchDashboardTab('adminProjects')">
+                    <i class="fa-solid fa-briefcase"></i> Projects
+                </button>
+                <button id="tabAdminTasks" class="tab-btn hidden" onclick="switchDashboardTab('adminTasks')">
+                    <i class="fa-solid fa-list-check"></i> All Tasks
+                </button>
+                <button id="tabAdminSchedule" class="tab-btn hidden" onclick="switchDashboardTab('adminSchedule')">
+                    <i class="fa-solid fa-calendar-days"></i> Schedule
+                </button>
+                <!-- Employee Tabs -->
+                <button id="tabEmpProfile" class="tab-btn active hidden" onclick="switchDashboardTab('empProfile')">
+                    <i class="fa-solid fa-user"></i> My Profile
+                </button>
+                <button id="tabEmpTasks" class="tab-btn hidden" onclick="switchDashboardTab('empTasks')">
+                    <i class="fa-solid fa-list-check"></i> My Tasks
+                </button>
+            </div>
+
             <!-- ADMIN MANAGEMENT PANEL -->
             <div id="adminPanel" class="panel-section hidden">
                 <div class="panel-header">
@@ -148,6 +172,9 @@
                             <!-- Dynamic Content -->
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" id="employeePagination">
+                    <!-- Pagination will be rendered here -->
                 </div>
             </div>
 
@@ -230,6 +257,133 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            <!-- ADMIN PROJECTS PANEL -->
+            <div id="projectPanel" class="panel-section hidden">
+                <div class="panel-header">
+                    <div>
+                        <h1><i class="fa-solid fa-briefcase"></i> Project Management</h1>
+                        <p class="text-muted">Manage projects and their status</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openProjectModal()">
+                        <i class="fa-solid fa-plus"></i> Add Project
+                    </button>
+                </div>
+
+                <!-- Search & Filter Controls -->
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="searchProjectInput" class="form-control" placeholder="Search project by name or description..." oninput="triggerProjectFilter()">
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fa-solid fa-sort"></i> Sort By:</label>
+                        <select id="sortProjectSelect" class="form-select" onchange="triggerProjectFilter()">
+                            <option value="id,desc">ID (Newest First)</option>
+                            <option value="id,asc">ID (Oldest First)</option>
+                            <option value="name,asc">Name (A-Z)</option>
+                            <option value="status,asc">Status (A-Z)</option>
+                            <option value="status,desc">Status (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Project ID</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectTableBody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="projectPagination">
+                    <!-- Pagination will be rendered here -->
+                </div>
+            </div>
+
+            <!-- TASKS PANEL (Admin & Employee) -->
+            <div id="taskPanel" class="panel-section hidden">
+                <div class="panel-header">
+                    <div>
+                        <h1><i class="fa-solid fa-list-check"></i> Task Management</h1>
+                        <p class="text-muted" id="taskPanelDesc">Manage tasks and deadlines</p>
+                    </div>
+                    <button id="btnAddTask" class="btn btn-primary hidden" onclick="openTaskModal()">
+                        <i class="fa-solid fa-plus"></i> Add Task
+                    </button>
+                </div>
+
+                <!-- Search & Filter Controls -->
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="searchTaskInput" class="form-control" placeholder="Search task by title..." oninput="triggerTaskFilter()">
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fa-solid fa-sort"></i> Sort By:</label>
+                        <select id="sortTaskSelect" class="form-select" onchange="triggerTaskFilter()">
+                            <option value="id,desc">ID (Newest First)</option>
+                            <option value="id,asc">ID (Oldest First)</option>
+                            <option value="deadline,asc">Deadline (Closest)</option>
+                            <option value="status,asc">Status (A-Z)</option>
+                            <option value="status,desc">Status (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="taskTable">
+                        <thead>
+                            <tr>
+                                <th>Task ID</th>
+                                <th>Title</th>
+                                <th>Project Code</th>
+                                <th>Assignee</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskTableBody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="taskPagination">
+                    <!-- Pagination will be rendered here -->
+                </div>
+            </div>
+
+            <!-- SCHEDULE PANEL -->
+            <div id="schedulePanel" class="panel-section hidden">
+                <div class="panel-header">
+                    <div>
+                        <h1><i class="fa-solid fa-calendar-days"></i> Schedule Overview</h1>
+                        <p class="text-muted">Track project and task timelines</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Deadline</th>
+                                <th>Type</th>
+                                <th>ID / Name</th>
+                                <th>Status</th>
+                                <th>Assignee / Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>
@@ -326,6 +480,131 @@
                 </div>
             </div>
         </div>
+
+        <!-- ADD / EDIT PROJECT MODAL -->
+        <div id="projectModal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3 id="projectModalTitle"><i class="fa-solid fa-briefcase"></i> Add New Project</h3>
+                    <button class="modal-close" onclick="closeProjectModal()">&times;</button>
+                </div>
+                <form id="projectForm" onsubmit="handleSaveProject(event)">
+                    <div class="form-grid">
+                        <input type="hidden" id="pId">
+                        <div class="form-group span-2">
+                            <label for="pCode">Project ID *</label>
+                            <input type="text" id="pCode" class="form-control" placeholder="e.g. PRJ001" required>
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="pName">Project Name *</label>
+                            <input type="text" id="pName" class="form-control" required>
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="pDescription">Description</label>
+                            <textarea id="pDescription" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="pStatus">Status *</label>
+                            <select id="pStatus" class="form-select" required>
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="COMPLETED">COMPLETED</option>
+                                <option value="ON_HOLD">ON_HOLD</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeProjectModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Project</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ADD / EDIT TASK MODAL -->
+        <div id="taskModal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3 id="taskModalTitle"><i class="fa-solid fa-list-check"></i> Add New Task</h3>
+                    <button class="modal-close" onclick="closeTaskModal()">&times;</button>
+                </div>
+                <form id="taskForm" onsubmit="handleSaveTask(event)">
+                    <div class="form-grid">
+                        <input type="hidden" id="tId">
+                        <div class="form-group span-2">
+                            <label for="tCode">Task ID *</label>
+                            <input type="text" id="tCode" class="form-control" placeholder="e.g. TSK001" required>
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="tTitle">Task Title *</label>
+                            <input type="text" id="tTitle" class="form-control" required>
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="tDescription">Description</label>
+                            <textarea id="tDescription" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="tProjectId">Project ID *</label>
+                            <input type="text" id="tProjectId" class="form-control" placeholder="e.g. PRJ001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tAssigneeId">Assignee ID *</label>
+                            <input type="text" id="tAssigneeId" class="form-control" placeholder="e.g. EMP001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tDeadline">Deadline</label>
+                            <input type="date" id="tDeadline" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="tStatus">Status *</label>
+                            <select id="tStatus" class="form-select" required>
+                                <option value="TODO">TODO</option>
+                                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                <option value="DONE">DONE</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- PROJECT TASKS MODAL -->
+        <div id="projectTasksModal" class="modal-overlay hidden">
+            <div class="modal-card" style="max-width: 900px;">
+                <div class="modal-header">
+                    <h3 id="projectTasksTitle"><i class="fa-solid fa-list-check"></i> Tasks for Project</h3>
+                    <button class="modal-close" onclick="closeProjectTasksModal()">&times;</button>
+                </div>
+                <div class="modal-body-details" style="display: block;">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Task ID</th>
+                                    <th>Title</th>
+                                    <th>Assignee</th>
+                                    <th>Deadline</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projectTasksTableBody">
+                                <!-- Dynamic Content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls" id="projectTasksPagination" style="margin-top: 10px;">
+                        <!-- Pagination -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeProjectTasksModal()">Close</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="js/app.js"></script>

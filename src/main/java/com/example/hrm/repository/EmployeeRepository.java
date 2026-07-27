@@ -3,18 +3,20 @@ package com.example.hrm.repository;
 import com.example.hrm.entity.Employee;
 import com.example.hrm.entity.EmployeeType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, String> {
-    List<Employee> findByFullNameContainingIgnoreCase(String fullName);
+    Page<Employee> findByFullNameContainingIgnoreCase(String fullName, Pageable pageable);
 
-    List<Employee> findByEmployeeType(EmployeeType employeeType);
+    Page<Employee> findByEmployeeType(EmployeeType employeeType, Pageable pageable);
 
-    List<Employee> findByFullNameContainingIgnoreCaseAndEmployeeType(String fullName, EmployeeType employeeType);
+    Page<Employee> findByFullNameContainingIgnoreCaseAndEmployeeType(String fullName, EmployeeType employeeType, Pageable pageable);
 
     boolean existsByEmail(String email);
 }

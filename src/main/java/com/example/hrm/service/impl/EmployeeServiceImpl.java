@@ -14,8 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+
+
+import com.example.hrm.dto.response.PageResponse;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -28,32 +29,36 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EmployeeResponse> getAllEmployees(String name, EmployeeType employeeType, String requesterId, boolean isAdmin) {
+    public PageResponse<EmployeeResponse> getAllEmployees(String name, EmployeeType employeeType, String requesterId, boolean isAdmin, org.springframework.data.domain.Pageable pageable) {
         if (!isAdmin) {
             return employeeRepository.findById(requesterId)
-                    .map(emp -> Collections.singletonList(EmployeeResponse.fromEntity(emp, true)))
-                    .orElse(Collections.emptyList());
+                    .map(emp -> {
+                        org.springframework.data.domain.Page<Employee> singlePage = new org.springframework.data.domain.PageImpl<>(Collections.singletonList(emp), pageable, 1);
+                        org.springframework.data.domain.Page<EmployeeResponse> responsePage = singlePage.map(e -> EmployeeResponse.fromEntity(e, true));
+                        return com.example.hrm.dto.response.PageResponse.of(responsePage);
+                    })
+                    .orElse(com.example.hrm.dto.response.PageResponse.of(org.springframework.data.domain.Page.empty(pageable)));
         }
         
-        List<Employee> employees;
+        org.springframework.data.domain.Page<Employee> employees;
         boolean hasName = StringUtils.hasText(name);
 
         if (hasName && employeeType != null) {
-            employees = employeeRepository.findByFullNameContainingIgnoreCaseAndEmployeeType(name.trim(), employeeType);
+            employees = employeeRepository.findByFullNameContainingIgnoreCaseAndEmployeeType(name.trim(), employeeType, pageable);
         } else if (hasName) {
-            employees = employeeRepository.findByFullNameContainingIgnoreCase(name.trim());
+            employees = employeeRepository.findByFullNameContainingIgnoreCase(name.trim(), pageable);
         } else if (employeeType != null) {
-            employees = employeeRepository.findByEmployeeType(employeeType);
+            employees = employeeRepository.findByEmployeeType(employeeType, pageable);
         } else {
-            employees = employeeRepository.findAll();
+            employees = employeeRepository.findAll(pageable);
         }
 
-        return employees.stream()
-                .map(emp -> {
-                    boolean includeSalary = isAdmin || emp.getEmployeeId().equalsIgnoreCase(requesterId);
-                    return EmployeeResponse.fromEntity(emp, includeSalary);
-                })
-                .collect(Collectors.toList());
+        org.springframework.data.domain.Page<EmployeeResponse> responsePage = employees.map(emp -> {
+            boolean includeSalary = isAdmin || emp.getEmployeeId().equalsIgnoreCase(requesterId);
+            return EmployeeResponse.fromEntity(emp, includeSalary);
+        });
+
+        return com.example.hrm.dto.response.PageResponse.of(responsePage);
     }
 
     @Override

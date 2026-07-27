@@ -789,3 +789,93 @@ body, .navbar, .auth-card, .table-responsive, .profile-card-container, .modal-ca
     color: #000000 !important;
 }
 
+/* Task Status Colors */
+.task-late td {
+    background-color: #fca5a5 !important;
+    color: #000000 !important;
+}
+.task-normal td {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+.task-done td {
+    background-color: #86efac !important;
+    color: #000000 !important;
+}
+.task-on-hold td {
+    background-color: #fde047 !important;
+    color: #000000 !important;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.pagination-info {
+    color: var(--text-muted);
+}
+
+.pagination-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.pagination-actions select {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-input);
+    color: var(--text-main);
+    border-radius: 4px;
+}
+
+.pagination-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.pagination-buttons button {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-input);
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.pagination-buttons button:hover:not(:disabled) {
+    background: var(--primary);
+    color: #fff;
+}
+
+.pagination-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Force Pagination B&W */
+.pagination-controls {
+    background: #ffffff !important;
+    border-color: #000000 !important;
+}
+.pagination-info {
+    color: #000000 !important;
+}
+.pagination-actions select, .pagination-buttons button {
+    background: #ffffff !important;
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+    border-radius: 0 !important;
+}
+.pagination-buttons button:hover:not(:disabled) {
+    background: #000000 !important;
+    color: #ffffff !important;
+}

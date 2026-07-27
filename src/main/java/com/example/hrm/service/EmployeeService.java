@@ -4,11 +4,14 @@ import com.example.hrm.dto.request.EmployeeRequest;
 import com.example.hrm.dto.response.EmployeeResponse;
 import com.example.hrm.entity.EmployeeType;
 
-import java.util.List;
+
+
+import com.example.hrm.dto.response.PageResponse;
+import org.springframework.data.domain.Pageable;
 
 public interface EmployeeService {
 
-    List<EmployeeResponse> getAllEmployees(String name, EmployeeType employeeType, String requesterId, boolean isAdmin);
+    PageResponse<EmployeeResponse> getAllEmployees(String name, EmployeeType employeeType, String requesterId, boolean isAdmin, Pageable pageable);
 
     EmployeeResponse getEmployeeById(String employeeId, String requesterId, boolean isAdmin);
 
